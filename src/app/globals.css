@@ -1,0 +1,761 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   LIGHT THEME
+   Contrast targets: body text >= 7:1, muted text >= 4.5:1 on
+   its own surface. Every value below is checked against
+   --background / --surface, not against pure white.
+   ============================================================ */
+:root {
+  --radius: 0.85rem;
+
+  --background: #f5f6fb;
+  --surface: #ffffff;
+  --surface-muted: #eef0f7;
+  --surface-raised: #ffffff;
+
+  /* Text ramp */
+  --foreground: #12142a;
+  --foreground-soft: #3a3f60;
+  --muted-foreground: #5a5f80;
+  --faint-foreground: #767b9c;
+
+  --border: #e2e5f0;
+  --border-strong: #cbcfe2;
+
+  --primary: #4338ca;
+  --primary-hover: #3730a3;
+  --primary-foreground: #ffffff;
+  --primary-soft: #eceafd;
+  --on-primary-soft: #372fa8;
+
+  --accent: #0f766e;
+  --accent-foreground: #ffffff;
+  --accent-soft: #dcf5f1;
+  --on-accent-soft: #0b5b55;
+
+  --success: #15803d;
+  --success-soft: #dff3e5;
+  --on-success-soft: #116232;
+  --warning: #a1600a;
+  --warning-soft: #fcefd9;
+  --on-warning-soft: #7d4a06;
+  --danger: #be123c;
+  --danger-soft: #fbe0e6;
+  --on-danger-soft: #99102f;
+  --info: #1d4ed8;
+  --info-soft: #e3ebfc;
+  --on-info-soft: #1a44b8;
+
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --secondary: var(--surface-muted);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface-muted);
+  --destructive: var(--danger);
+  --destructive-foreground: #ffffff;
+  --input: var(--border);
+  --input-background: var(--surface);
+  --ring: var(--primary);
+
+  /* Sidebar is a dark slab in both themes — its own token set */
+  --sidebar: #16183a;
+  --sidebar-foreground: #cdd0ec;
+  --sidebar-foreground-dim: #9a9fc8;
+  --sidebar-active: #2a2f66;
+  --sidebar-active-foreground: #ffffff;
+  --sidebar-accent: #8b8cf9;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+
+  --shadow-color: 18 20 42;
+
+  --font-lexend:
+    "Lexend", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-inter:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-lexend);
+  --font-body: var(--font-inter);
+
+  /* Layout rhythm — sidebar width lives here so shell + sidebar agree */
+  --sidebar-width: 17.5rem;        /* 272px */
+  --sidebar-width-collapsed: 4.75rem; /* 76px */
+  --navbar-height: 4rem;
+}
+
+/* ============================================================
+   DARK THEME
+   ============================================================ */
+.dark {
+  --background: #0a0b16;
+  --surface: #14162c;
+  --surface-muted: #1c1f3d;
+  --surface-raised: #191c36;
+
+  --foreground: #f0f1fa;
+  --foreground-soft: #c9cce5;
+  --muted-foreground: #a3a7cd;
+  --faint-foreground: #868ab0;
+
+  --border: #2b2f5a;
+  --border-strong: #3a3f72;
+
+  --primary: #8b93f8;
+  --primary-hover: #a1a7fa;
+  --primary-foreground: #0a0b16;
+  --primary-soft: #23255c;
+  --on-primary-soft: #b5baff;
+
+  --accent: #2dd4bf;
+  --accent-foreground: #04211f;
+  --accent-soft: #10352f;
+  --on-accent-soft: #6ee7d7;
+
+  --success: #4ade80;
+  --success-soft: #113522;
+  --on-success-soft: #86efac;
+  --warning: #fbbf24;
+  --warning-soft: #3b2a0a;
+  --on-warning-soft: #fcd34d;
+  --danger: #fb7185;
+  --danger-soft: #3d1523;
+  --on-danger-soft: #fda4af;
+  --info: #60a5fa;
+  --info-soft: #16284f;
+  --on-info-soft: #93c5fd;
+
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--foreground);
+  --secondary: var(--surface-muted);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface-muted);
+  --destructive: var(--danger);
+  --destructive-foreground: #0a0b16;
+  --input: var(--border-strong);
+  --input-background: var(--surface-muted);
+  --ring: var(--primary);
+
+  --sidebar: #0a0b1e;
+  --sidebar-foreground: #b6bade;
+  --sidebar-foreground-dim: #8489b3;
+  --sidebar-active: #1e2249;
+  --sidebar-active-foreground: #ffffff;
+  --sidebar-accent: #8b93f8;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+
+  --shadow-color: 0 0 0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-foreground-soft: var(--foreground-soft);
+  --color-faint-foreground: var(--faint-foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-raised: var(--surface-raised);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary-soft: var(--on-primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent-soft: var(--on-accent-soft);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-on-success-soft: var(--on-success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-on-warning-soft: var(--on-warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-on-danger-soft: var(--on-danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-on-info-soft: var(--on-info-soft);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-foreground-dim: var(--sidebar-foreground-dim);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+
+  /* Responsive breakpoints — xs added for small phones */
+  --breakpoint-xs: 26rem;
+
+  /* Global font sizes */
+  --text-xs: 0.875rem;       /* 14px */
+  --text-xs--line-height: 1.25rem;
+  
+  --text-sm: 1rem;           /* 16px */
+  --text-sm--line-height: 1.5rem;
+  
+  --text-base: 1.0625rem;    /* 17px */
+  --text-base--line-height: 1.625rem;
+  
+  --text-lg: 1.25rem;        /* 20px */
+  --text-lg--line-height: 1.75rem;
+  
+  --text-xl: 1.375rem;       /* 22px */
+  --text-xl--line-height: 1.875rem;
+  
+  --text-2xl: 1.75rem;       /* 28px */
+  --text-2xl--line-height: 2.125rem;
+  
+  --text-3xl: 2rem;          /* 32px */
+  --text-3xl--line-height: 2.4rem;
+
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    min-width: 0; /* stops flex/grid children from forcing horizontal scroll */
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%; /* no auto-zoom of text on iOS rotate */
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  
+  /* body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  } */
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    color: var(--foreground);
+    text-wrap: balance;
+  }
+
+  /* Fluid type — scales between phone and desktop without media queries */
+  h1 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2rem); line-height: 1.2; }
+  h2 { font-size: clamp(1.25rem, 1.05rem + 0.9vw, 1.6rem); line-height: 1.25; }
+  h3 { font-size: clamp(1.06rem, 0.95rem + 0.5vw, 1.28rem); line-height: 1.3; }
+
+  p { text-wrap: pretty; }
+
+  /* iOS zooms the viewport when a focused input is under 16px */
+  input, select, textarea {
+    font-size: max(16px, 0.875rem);
+  }
+  @media (min-width: 640px) {
+    input, select, textarea { font-size: 0.875rem; }
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--primary-soft);
+    color: var(--on-primary-soft);
+  }
+
+  ::placeholder {
+    color: var(--faint-foreground);
+    opacity: 1; /* Firefox dims placeholders by default */
+  }
+}
+
+@layer utilities {
+  /* ---- Surfaces ---- */
+  .glass {
+    background: color-mix(in srgb, var(--surface) 74%, transparent);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid color-mix(in srgb, var(--border-strong) 60%, transparent);
+  }
+
+  /* Used by the auth screens. Previously referenced but never defined. */
+  .glass-card {
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    border: 1px solid var(--border);
+    box-shadow:
+      0 1px 2px rgb(var(--shadow-color) / 0.05),
+      0 24px 60px -24px rgb(var(--shadow-color) / 0.28);
+  }
+
+  /* Faint grid backdrop for the auth screens. Also previously undefined. */
+  .hero-grid {
+    background-image:
+      linear-gradient(to right, var(--border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+
+  .card-shadow {
+    box-shadow:
+      0 1px 2px rgb(var(--shadow-color) / 0.04),
+      0 8px 24px -12px rgb(var(--shadow-color) / 0.10);
+  }
+
+  .card-shadow-lg {
+    box-shadow:
+      0 4px 12px rgb(var(--shadow-color) / 0.06),
+      0 24px 48px -20px rgb(var(--shadow-color) / 0.18);
+  }
+
+  /* ---- Responsive helpers ---- */
+
+  /* Page gutter that tracks the safe area on notched phones */
+  .page-padding {
+    padding-inline: max(1rem, env(safe-area-inset-left));
+    padding-block: 1rem;
+  }
+  @media (min-width: 640px) { .page-padding { padding: 1.5rem; } }
+  @media (min-width: 1024px) { .page-padding { padding: 2rem; } }
+
+  /* Tables can't reflow — wrap them so they scroll instead of
+     blowing out the page width on phones. */
+  .table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .table-scroll > table { min-width: 44rem; }
+
+  /* Auto-fit card grid — no breakpoint juggling needed */
+  .auto-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  }
+  .auto-grid-sm {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+  }
+
+  /* Comfortable tap target on touch devices (WCAG 2.5.5) */
+  @media (pointer: coarse) {
+    .tap-target { min-height: 44px; min-width: 44px; }
+  }
+
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  .text-balance { text-wrap: balance; }
+
+  /* Clamp long titles instead of letting them push layout */
+  .clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+}
+
+/* ---- Animations ---- */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-float { animation: float 5s ease-in-out infinite; }
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   react-big-calendar — themed for BOTH modes.
+   The old rules only styled .dark and then two stray overrides
+   at the bottom painted light mode with a dark-navy "today" cell
+   and neon-green events with white text. Both are gone.
+   ============================================================ */
+.rbc-calendar {
+  background: var(--surface);
+  color: var(--foreground);
+  font-family: var(--font-body), sans-serif;
+}
+
+.rbc-header {
+  background: var(--surface-muted);
+  color: var(--foreground);
+  border-color: var(--border);
+  padding-block: 0.5rem;
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.rbc-month-view,
+.rbc-time-view,
+.rbc-agenda-view {
+  background: var(--surface);
+  border-color: var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.rbc-day-bg,
+.rbc-time-content,
+.rbc-time-header-content,
+.rbc-time-column {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.rbc-month-row + .rbc-month-row,
+.rbc-day-bg + .rbc-day-bg,
+.rbc-timeslot-group,
+.rbc-time-slot,
+.rbc-time-content > * + * > * {
+  border-color: var(--border);
+}
+
+.rbc-label,
+.rbc-time-gutter,
+.rbc-date-cell,
+.rbc-button-link {
+  color: var(--foreground-soft);
+}
+
+.rbc-off-range-bg { background: var(--surface-muted); }
+.rbc-off-range .rbc-button-link { color: var(--faint-foreground); }
+
+/* "Today" — a soft primary wash in both modes, not a navy block */
+.rbc-today { background: var(--primary-soft); }
+
+.rbc-toolbar { gap: 0.5rem; flex-wrap: wrap; }
+
+.rbc-toolbar .rbc-toolbar-label {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.rbc-toolbar button {
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border-strong);
+  border-radius: calc(var(--radius) - 4px);
+}
+
+.rbc-toolbar button:hover,
+.rbc-toolbar button:focus,
+.rbc-toolbar button.rbc-active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+/* Events use the theme primary — readable contrast in both modes */
+.rbc-event,
+.rbc-day-slot .rbc-background-event {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.rbc-event:focus { outline: 2px solid var(--ring); outline-offset: 1px; }
+.rbc-event.rbc-selected { background: var(--primary-hover); }
+.rbc-show-more { color: var(--primary); background: transparent; font-weight: 600; }
+.rbc-current-time-indicator { background-color: var(--accent); height: 2px; }
+
+/* Calendar on a phone: shrink chrome so the month grid still fits */
+@media (max-width: 640px) {
+  .rbc-toolbar { font-size: 0.8125rem; justify-content: center; }
+  .rbc-toolbar button { padding: 0.3rem 0.6rem; }
+  .rbc-header { font-size: 0.6875rem; padding-block: 0.35rem; }
+  .rbc-event { font-size: 0.6875rem; padding: 1px 4px; }
+  .rbc-date-cell { font-size: 0.75rem; }
+}
+
+
+/* ============================================================
+   DASHBOARD TYPOGRAPHY
+   Increases common Tailwind text sizes inside the main content
+   without changing the sidebar/navigation typography.
+   ============================================================ */
+main .text-xs {
+  font-size: 0.8125rem !important; /* 13px */
+  line-height: 1.25rem !important;
+}
+
+main .text-sm {
+  font-size: 1rem !important; /* 16px */
+  line-height: 1.5rem !important;
+}
+
+main .text-base {
+  font-size: 1.0625rem !important; /* 17px */
+  line-height: 1.6rem !important;
+}
+
+main .text-lg {
+  font-size: 1.1875rem !important; /* 19px */
+  line-height: 1.75rem !important;
+}
+
+main .text-xl {
+  font-size: 1.3125rem !important; /* 21px */
+  line-height: 1.8rem !important;
+}
+
+main .text-2xl {
+  font-size: 1.625rem !important; /* 26px */
+  line-height: 2rem !important;
+}
+
+main .text-3xl {
+  font-size: 2rem !important; /* 32px */
+  line-height: 2.35rem !important;
+}
+
+
+
+
+/* ============================================================
+   react-big-calendar — readable in light + dark mode
+   ============================================================ */
+.rbc-calendar {
+  color: var(--foreground);
+  font-family: inherit;
+}
+
+.rbc-toolbar {
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.rbc-toolbar button {
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  font-weight: 500;
+}
+
+.rbc-toolbar button:hover,
+.rbc-toolbar button:active,
+.rbc-toolbar button.rbc-active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+.rbc-toolbar-label {
+  color: var(--foreground);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.rbc-header {
+  padding: 0.6rem 0.25rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--foreground);
+  border-color: var(--border) !important;
+  background: var(--surface-muted);
+}
+
+.rbc-time-view,
+.rbc-month-view,
+.rbc-time-header,
+.rbc-time-content,
+.rbc-timeslot-group,
+.rbc-time-slot,
+.rbc-day-slot,
+.rbc-time-header-content,
+.rbc-month-row,
+.rbc-day-bg,
+.rbc-off-range-bg {
+  border-color: var(--border) !important;
+}
+
+.rbc-time-view,
+.rbc-month-view {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.rbc-time-gutter,
+.rbc-time-header-gutter,
+.rbc-label {
+  background: var(--surface-muted) !important;
+  color: var(--muted-foreground) !important;
+  font-size: 0.75rem !important;
+  font-weight: 500;
+}
+
+.rbc-timeslot-group {
+  min-height: 48px;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  border-top-color: var(--border) !important;
+}
+
+.rbc-today {
+  background-color: color-mix(in srgb, var(--primary) 8%, transparent) !important;
+}
+
+.rbc-off-range-bg {
+  background: var(--surface-muted) !important;
+}
+
+.rbc-off-range {
+  color: var(--faint-foreground) !important;
+}
+
+.rbc-date-cell {
+  color: var(--foreground);
+  padding: 0.25rem;
+  font-weight: 500;
+}
+
+.rbc-event {
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+}
+
+.rbc-event-label,
+.rbc-event-content {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  line-height: 1.25 !important;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.35);
+}
+
+.rbc-show-more {
+  color: var(--primary);
+  font-weight: 600;
+  background: transparent;
+}
+
+.rbc-current-time-indicator {
+  background-color: var(--primary);
+  height: 2px;
+}
+
+.rbc-time-content > * + * > * {
+  border-left-color: var(--border) !important;
+}
+
+.rbc-day-slot .rbc-event {
+  min-height: 28px;
+}
+
+.rbc-addons-dnd .rbc-addons-dnd-resizable {
+  color: #fff;
+}
+
+/* Dark mode: stronger contrast on gutters / headers */
+.dark .rbc-header,
+.dark .rbc-time-gutter,
+.dark .rbc-time-header-gutter,
+.dark .rbc-label {
+  background: #1a1d2e !important;
+  color: #c8cce0 !important;
+}
+
+.dark .rbc-time-view,
+.dark .rbc-month-view {
+  background: #12141f;
+  border-color: #2a2f45;
+}
+
+.dark .rbc-toolbar button {
+  background: #1a1d2e;
+  color: #e8eaf4;
+  border-color: #2a2f45;
+}
+
+.dark .rbc-toolbar button:hover,
+.dark .rbc-toolbar button.rbc-active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.dark .rbc-today {
+  background-color: rgba(99, 102, 241, 0.12) !important;
+}
+
+.dark .rbc-off-range-bg {
+  background: #0e1018 !important;
+}
+
+.dark .rbc-event-label,
+.dark .rbc-event-content {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.55);
+}
