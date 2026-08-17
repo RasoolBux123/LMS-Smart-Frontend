@@ -1,49 +1,30 @@
 "use client";
 
 import { useState } from "react";
-
 import { useForm, Controller } from "react-hook-form";
-
 import { zodResolver } from "@hookform/resolvers/zod";
-
 import { z } from "zod";
-
 import { useRouter } from "next/navigation";
-
 import { toast } from "sonner";
-
 import DatePicker from "react-datepicker";
-
 import "react-datepicker/dist/react-datepicker.css";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-
 import { Input } from "@/components/ui/input";
-
 import { Textarea } from "@/components/ui/textarea";
-
 import { Label } from "@/components/ui/label";
-
 import { Button } from "@/components/ui/button";
-
 import { Checkbox } from "@/components/ui/checkbox";
-
-import { Save, Send } from "lucide-react";
-
+import { Save, Send, Loader2 } from "lucide-react";
 import { useCourseOptions } from "@/hooks/useCourseOptions";
-
-import { useAuth } from "@/hooks/useAuth"; // <-- ADDED
-
+import { useAuth } from "@/hooks/useAuth";
 import {
   quizzesApi,
   type Coursework,
   type CourseworkPayload,
 } from "@/lib/api/coursework";
-
-import { errorMessage, cn } from "@/lib/utils";
-
+import { errorMessage } from "@/lib/utils";
 import FileUpload from "@/components/instructor/FileUpload";
-
 import {
   Select,
   SelectContent,
@@ -53,40 +34,13 @@ import {
 } from "@/components/ui/select";
 
 const fileTypes = [
-  {
-    value: "pdf",
-    label: "PDF",
-  },
-
-  {
-    value: "docx",
-    label: "DOCX",
-  },
-
-  {
-    value: "xls",
-    label: "Excel",
-  },
-
-  {
-    value: "ppt",
-    label: "PowerPoint",
-  },
-
-  {
-    value: "txt",
-    label: "TXT",
-  },
-
-  {
-    value: "zip",
-    label: "ZIP",
-  },
-
-  {
-    value: "other",
-    label: "Other",
-  },
+  { value: "pdf", label: "PDF" },
+  { value: "docx", label: "DOCX" },
+  { value: "xls", label: "Excel" },
+  { value: "ppt", label: "PowerPoint" },
+  { value: "txt", label: "TXT" },
+  { value: "zip", label: "ZIP" },
+  { value: "other", label: "Other" },
 ];
 
 const schema = z.object({
@@ -124,9 +78,7 @@ function FieldError({ message }: { message?: string }) {
 
 export interface QuizFormProps {
   mode: "create" | "edit";
-  /** Required in edit mode — the quiz being updated. */
   quizId?: string;
-  /** Existing values used to prefill the form in edit mode. */
   defaultValues?: Coursework;
 }
 
@@ -136,10 +88,8 @@ export default function QuizForm({
   defaultValues,
 }: QuizFormProps) {
   const router = useRouter();
+  const { user } = useAuth();
 
-  const { user } = useAuth(); // <-- ADDED
-
-  /* Real courses from the API — the old static import was an empty array. */
   const {
     courses,
     loading: coursesLoading,
@@ -147,18 +97,12 @@ export default function QuizForm({
   } = useCourseOptions();
 
   const [quizFile, setQuizFile] = useState<File | null>(null);
-
   const [saving, setSaving] = useState(false);
 
   function onInvalid() {
     toast.error("Please fix the highlighted fields before saving.");
   }
 
-  /*
-   * In edit mode the deadline arrives as an ISO string; the picker needs a
-   * Date. Guard against an unparseable value so a bad record cannot crash
-   * the page with an Invalid Date.
-   */
   const [deadline, setDeadline] = useState<Date | null>(() => {
     if (!defaultValues?.deadline) return null;
     const parsed = new Date(defaultValues.deadline);
@@ -167,37 +111,28 @@ export default function QuizForm({
 
   const {
     register,
-
     control,
-
-    handleSubmit, formState: { errors } } =
-    useForm<QuizFormValues>({
-      resolver: zodResolver(schema),
-
-      defaultValues: {
-        title: defaultValues?.title ?? "",
-
-        courseId: defaultValues?.courseId ?? "",
-
-        description: defaultValues?.description ?? "",
-
-        instructions: defaultValues?.instructions ?? "",
-
-        deadline: defaultValues?.deadline ?? "",
-
-        allowedFileTypes: defaultValues?.allowedFileTypes ?? ["pdf"],
-
-        maxFileSizeMb: defaultValues?.maxFileSizeMb ?? 25,
-
-        totalMarks: defaultValues?.totalMarks ?? 100,
-      },
-    });
+    handleSubmit,
+    formState: { errors },
+  } = useForm<QuizFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      title: defaultValues?.title ?? "",
+      courseId: defaultValues?.courseId ?? "",
+      description: defaultValues?.description ?? "",
+      instructions: defaultValues?.instructions ?? "",
+      deadline: defaultValues?.deadline ?? "",
+      allowedFileTypes: defaultValues?.allowedFileTypes ?? ["pdf"],
+      maxFileSizeMb: defaultValues?.maxFileSizeMb ?? 25,
+      totalMarks: defaultValues?.totalMarks ?? 100,
+    },
+  });
 
   async function submit(values: QuizFormValues, publish: boolean) {
     const payload: CourseworkPayload = {
       title: values.title,
       courseId: values.courseId,
-      instructorId: user?.id, // <-- ADDED — without this the quiz saves with no owner and never shows in the instructor's list
+      instructorId: user?.id,
       description: values.description,
       instructions: values.instructions,
       deadline: values.deadline,
@@ -218,11 +153,6 @@ export default function QuizForm({
           ? await quizzesApi.update(quizId, payload)
           : await quizzesApi.create(payload);
 
-      /*
-       * The attachment goes up in a second request, because the quiz has to
-       * exist before a file can attach to it. A failure here must not read
-       * as a total failure — the quiz itself is saved.
-       */
       if (quizFile) {
         try {
           await quizzesApi.uploadAttachment(saved.id, quizFile);
@@ -254,11 +184,7 @@ export default function QuizForm({
   }
 
   return (
-    <form
-      className="space-y-6"
-
-      onSubmit={(e) => e.preventDefault()}
-    >
+    <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
       <Card>
         <CardHeader>
           <CardTitle>Quiz Details</CardTitle>
@@ -267,10 +193,8 @@ export default function QuizForm({
         <CardContent className="space-y-4">
           <div>
             <Label>Quiz Title</Label>
-
             <Input
               placeholder="Python Assignment Quiz"
-
               {...register("title")}
             />
             <FieldError message={errors.title?.message} />
@@ -278,22 +202,14 @@ export default function QuizForm({
 
           <div>
             <Label>Course</Label>
-
             <Controller
               control={control}
-
               name="courseId"
-
               render={({ field }) => (
-                <Select
-                  value={field.value}
-
-                  onValueChange={field.onChange}
-                >
+                <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select Course" />
                   </SelectTrigger>
-
                   <SelectContent>
                     {coursesLoading && (
                       <p className="px-2.5 py-3 text-sm text-muted-foreground">
@@ -305,11 +221,13 @@ export default function QuizForm({
                         Could not load courses. Please retry.
                       </p>
                     )}
-                    {!coursesLoading && !coursesError && courses.length === 0 && (
-                      <p className="px-2.5 py-3 text-sm text-muted-foreground">
-                        No courses assigned to you yet.
-                      </p>
-                    )}
+                    {!coursesLoading &&
+                      !coursesError &&
+                      courses.length === 0 && (
+                        <p className="px-2.5 py-3 text-sm text-muted-foreground">
+                          No courses assigned to you yet.
+                        </p>
+                      )}
                     {courses.map((course) => (
                       <SelectItem key={course.id} value={course.id}>
                         {course.title}
@@ -323,56 +241,34 @@ export default function QuizForm({
 
           <div>
             <Label>Description</Label>
-
-            <Textarea
-              rows={3}
-
-              {...register("description")}
-            />
+            <Textarea rows={3} {...register("description")} />
             <FieldError message={errors.description?.message} />
           </div>
 
           <div>
             <Label>Instructions</Label>
-
-            <Textarea
-              rows={3}
-
-              {...register("instructions")}
-            />
+            <Textarea rows={3} {...register("instructions")} />
             <FieldError message={errors.instructions?.message} />
           </div>
 
           <div>
             <Label>Deadline</Label>
-
             <Controller
               control={control}
-
               name="deadline"
-
               render={({ field }) => (
                 <DatePicker
                   selected={deadline}
-
                   onChange={(date: Date | null) => {
                     setDeadline(date);
-
                     field.onChange(date ? date.toISOString() : "");
                   }}
-
                   showTimeSelect
-
                   timeIntervals={15}
-
                   dateFormat="MMMM d, yyyy h:mm aa"
-
                   minDate={new Date()}
-
                   isClearable
-
                   placeholderText="Select quiz deadline"
-
                   className="w-full rounded-xl border px-4 py-3 bg-background text-sm"
                 />
               )}
@@ -389,23 +285,18 @@ export default function QuizForm({
         <CardContent className="space-y-5">
           <div>
             <Label>Allowed Answer File Types</Label>
-
             <Controller
               control={control}
-
               name="allowedFileTypes"
-
               render={({ field }) => (
-                <div className="flex flex-wrap gap-4 mt-3">
+                <div className="mt-3 flex flex-wrap gap-4">
                   {fileTypes.map((type) => (
                     <label
                       key={type.value}
-
                       className="flex items-center gap-2 text-sm"
                     >
                       <Checkbox
                         checked={field.value.includes(type.value)}
-
                         onCheckedChange={(checked) => {
                           field.onChange(
                             checked
@@ -416,7 +307,6 @@ export default function QuizForm({
                           );
                         }}
                       />
-
                       {type.label}
                     </label>
                   ))}
@@ -425,69 +315,64 @@ export default function QuizForm({
             />
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label>Maximum File Size (MB)</Label>
-
-              <Input
-                type="number"
-
-                {...register("maxFileSizeMb")}
-              />
+              <Input type="number" {...register("maxFileSizeMb")} />
             </div>
-
             <div>
               <Label>Total Marks</Label>
-
-              <Input
-                type="number"
-
-                {...register("totalMarks")}
-              />
+              <Input type="number" {...register("totalMarks")} />
             </div>
           </div>
 
           <div>
-            <FileUpload
-              title="Quiz Attachment"
-
-              onFileSelect={setQuizFile}
-            />
+            <FileUpload title="Quiz Attachment" onFileSelect={setQuizFile} />
           </div>
         </CardContent>
       </Card>
 
+      {/* Colorful Professional submit buttons */}
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        {/* Save Draft */}
         <Button
           type="button"
-
           variant="outline"
-
           disabled={saving}
-
-          className="w-full sm:w-auto"
-
+          className="w-full min-w-[140px] sm:w-auto border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
           onClick={handleSubmit((values) => submit(values, false), onInvalid)}
         >
-          <Save className="h-4 w-4" />
-          Save Draft
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Draft
+            </>
+          )}
         </Button>
 
+        {/* Publish - Emerald Green */}
         <Button
           type="button"
-
           disabled={saving}
-
-          className="w-full sm:w-auto"
-
+          className="w-full min-w-[160px] sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-200 border-0"
           onClick={handleSubmit((values) => submit(values, true), onInvalid)}
         >
-          <Send className="h-4 w-4" />
-          {saving
-            ? "Saving…"
-            : mode === "create"
-              ? "Publish Quiz"
-              : "Save & Publish"}
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Publishing…
+            </>
+          ) : (
+            <>
+              <Send className="mr-2 h-4 w-4" />
+              {mode === "create" ? "Publish Quiz" : "Save & Publish"}
+            </>
+          )}
         </Button>
       </div>
     </form>
@@ -497,63 +382,33 @@ export default function QuizForm({
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 // "use client";
 
 // import { useState } from "react";
-
 // import { useForm, Controller } from "react-hook-form";
-
 // import { zodResolver } from "@hookform/resolvers/zod";
-
 // import { z } from "zod";
-
 // import { useRouter } from "next/navigation";
-
 // import { toast } from "sonner";
-
 // import DatePicker from "react-datepicker";
-
 // import "react-datepicker/dist/react-datepicker.css";
 
 // import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-
 // import { Input } from "@/components/ui/input";
-
 // import { Textarea } from "@/components/ui/textarea";
-
 // import { Label } from "@/components/ui/label";
-
 // import { Button } from "@/components/ui/button";
-
 // import { Checkbox } from "@/components/ui/checkbox";
-
-// import { Save, Send } from "lucide-react";
-
+// import { Save, Send, Loader2 } from "lucide-react";
 // import { useCourseOptions } from "@/hooks/useCourseOptions";
-
-// import { useAuth } from "@/hooks/useAuth"; // <-- ADDED
-
+// import { useAuth } from "@/hooks/useAuth";
 // import {
 //   quizzesApi,
 //   type Coursework,
 //   type CourseworkPayload,
 // } from "@/lib/api/coursework";
-
 // import { errorMessage } from "@/lib/utils";
-
 // import FileUpload from "@/components/instructor/FileUpload";
-
 // import {
 //   Select,
 //   SelectContent,
@@ -563,67 +418,51 @@ export default function QuizForm({
 // } from "@/components/ui/select";
 
 // const fileTypes = [
-//   {
-//     value: "pdf",
-//     label: "PDF",
-//   },
-
-//   {
-//     value: "docx",
-//     label: "DOCX",
-//   },
-
-//   {
-//     value: "xls",
-//     label: "Excel",
-//   },
-
-//   {
-//     value: "ppt",
-//     label: "PowerPoint",
-//   },
-
-//   {
-//     value: "txt",
-//     label: "TXT",
-//   },
-
-//   {
-//     value: "zip",
-//     label: "ZIP",
-//   },
-
-//   {
-//     value: "other",
-//     label: "Other",
-//   },
+//   { value: "pdf", label: "PDF" },
+//   { value: "docx", label: "DOCX" },
+//   { value: "xls", label: "Excel" },
+//   { value: "ppt", label: "PowerPoint" },
+//   { value: "txt", label: "TXT" },
+//   { value: "zip", label: "ZIP" },
+//   { value: "other", label: "Other" },
 // ];
 
 // const schema = z.object({
-//   title: z.string().min(5),
-
-//   courseId: z.string().min(1),
-
-//   description: z.string().min(10),
-
-//   instructions: z.string().min(5),
-
-//   deadline: z.string().min(1),
-
-//   totalMarks: z.coerce.number().min(1),
-
-//   allowedFileTypes: z.array(z.string()).min(1),
-
-//   maxFileSizeMb: z.coerce.number().min(1),
+//   title: z
+//     .string()
+//     .min(1, "Quiz title is required.")
+//     .min(5, "Title must be at least 5 characters."),
+//   courseId: z.string().min(1, "Please select a course."),
+//   description: z
+//     .string()
+//     .min(1, "Description is required.")
+//     .min(10, "Description must be at least 10 characters."),
+//   instructions: z
+//     .string()
+//     .min(1, "Instructions are required.")
+//     .min(5, "Instructions must be at least 5 characters."),
+//   deadline: z.string().min(1, "Please set a deadline."),
+//   totalMarks: z.coerce
+//     .number({ invalid_type_error: "Total marks must be a number." })
+//     .min(1, "Total marks must be at least 1."),
+//   allowedFileTypes: z
+//     .array(z.string())
+//     .min(1, "Select at least one allowed file type."),
+//   maxFileSizeMb: z.coerce
+//     .number({ invalid_type_error: "Max file size must be a number." })
+//     .min(1, "Max file size must be at least 1 MB."),
 // });
 
 // type QuizFormValues = z.infer<typeof schema>;
 
+// function FieldError({ message }: { message?: string }) {
+//   if (!message) return null;
+//   return <p className="mt-1.5 text-xs font-medium text-danger">{message}</p>;
+// }
+
 // export interface QuizFormProps {
 //   mode: "create" | "edit";
-//   /** Required in edit mode — the quiz being updated. */
 //   quizId?: string;
-//   /** Existing values used to prefill the form in edit mode. */
 //   defaultValues?: Coursework;
 // }
 
@@ -633,10 +472,8 @@ export default function QuizForm({
 //   defaultValues,
 // }: QuizFormProps) {
 //   const router = useRouter();
+//   const { user } = useAuth();
 
-//   const { user } = useAuth(); // <-- ADDED
-
-//   /* Real courses from the API — the old static import was an empty array. */
 //   const {
 //     courses,
 //     loading: coursesLoading,
@@ -644,14 +481,12 @@ export default function QuizForm({
 //   } = useCourseOptions();
 
 //   const [quizFile, setQuizFile] = useState<File | null>(null);
-
 //   const [saving, setSaving] = useState(false);
 
-//   /*
-//    * In edit mode the deadline arrives as an ISO string; the picker needs a
-//    * Date. Guard against an unparseable value so a bad record cannot crash
-//    * the page with an Invalid Date.
-//    */
+//   function onInvalid() {
+//     toast.error("Please fix the highlighted fields before saving.");
+//   }
+
 //   const [deadline, setDeadline] = useState<Date | null>(() => {
 //     if (!defaultValues?.deadline) return null;
 //     const parsed = new Date(defaultValues.deadline);
@@ -660,28 +495,19 @@ export default function QuizForm({
 
 //   const {
 //     register,
-
 //     control,
-
 //     handleSubmit,
+//     formState: { errors },
 //   } = useForm<QuizFormValues>({
 //     resolver: zodResolver(schema),
-
 //     defaultValues: {
 //       title: defaultValues?.title ?? "",
-
 //       courseId: defaultValues?.courseId ?? "",
-
 //       description: defaultValues?.description ?? "",
-
 //       instructions: defaultValues?.instructions ?? "",
-
 //       deadline: defaultValues?.deadline ?? "",
-
 //       allowedFileTypes: defaultValues?.allowedFileTypes ?? ["pdf"],
-
 //       maxFileSizeMb: defaultValues?.maxFileSizeMb ?? 25,
-
 //       totalMarks: defaultValues?.totalMarks ?? 100,
 //     },
 //   });
@@ -690,7 +516,7 @@ export default function QuizForm({
 //     const payload: CourseworkPayload = {
 //       title: values.title,
 //       courseId: values.courseId,
-//       instructorId: user?.id, // <-- ADDED — without this the quiz saves with no owner and never shows in the instructor's list
+//       instructorId: user?.id,
 //       description: values.description,
 //       instructions: values.instructions,
 //       deadline: values.deadline,
@@ -711,11 +537,6 @@ export default function QuizForm({
 //           ? await quizzesApi.update(quizId, payload)
 //           : await quizzesApi.create(payload);
 
-//       /*
-//        * The attachment goes up in a second request, because the quiz has to
-//        * exist before a file can attach to it. A failure here must not read
-//        * as a total failure — the quiz itself is saved.
-//        */
 //       if (quizFile) {
 //         try {
 //           await quizzesApi.uploadAttachment(saved.id, quizFile);
@@ -747,11 +568,7 @@ export default function QuizForm({
 //   }
 
 //   return (
-//     <form
-//       className="space-y-6"
-
-//       onSubmit={(e) => e.preventDefault()}
-//     >
+//     <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
 //       <Card>
 //         <CardHeader>
 //           <CardTitle>Quiz Details</CardTitle>
@@ -760,32 +577,23 @@ export default function QuizForm({
 //         <CardContent className="space-y-4">
 //           <div>
 //             <Label>Quiz Title</Label>
-
 //             <Input
 //               placeholder="Python Assignment Quiz"
-
 //               {...register("title")}
 //             />
+//             <FieldError message={errors.title?.message} />
 //           </div>
 
 //           <div>
 //             <Label>Course</Label>
-
 //             <Controller
 //               control={control}
-
 //               name="courseId"
-
 //               render={({ field }) => (
-//                 <Select
-//                   value={field.value}
-
-//                   onValueChange={field.onChange}
-//                 >
+//                 <Select value={field.value} onValueChange={field.onChange}>
 //                   <SelectTrigger>
 //                     <SelectValue placeholder="Select Course" />
 //                   </SelectTrigger>
-
 //                   <SelectContent>
 //                     {coursesLoading && (
 //                       <p className="px-2.5 py-3 text-sm text-muted-foreground">
@@ -797,11 +605,13 @@ export default function QuizForm({
 //                         Could not load courses. Please retry.
 //                       </p>
 //                     )}
-//                     {!coursesLoading && !coursesError && courses.length === 0 && (
-//                       <p className="px-2.5 py-3 text-sm text-muted-foreground">
-//                         No courses assigned to you yet.
-//                       </p>
-//                     )}
+//                     {!coursesLoading &&
+//                       !coursesError &&
+//                       courses.length === 0 && (
+//                         <p className="px-2.5 py-3 text-sm text-muted-foreground">
+//                           No courses assigned to you yet.
+//                         </p>
+//                       )}
 //                     {courses.map((course) => (
 //                       <SelectItem key={course.id} value={course.id}>
 //                         {course.title}
@@ -815,54 +625,34 @@ export default function QuizForm({
 
 //           <div>
 //             <Label>Description</Label>
-
-//             <Textarea
-//               rows={3}
-
-//               {...register("description")}
-//             />
+//             <Textarea rows={3} {...register("description")} />
+//             <FieldError message={errors.description?.message} />
 //           </div>
 
 //           <div>
 //             <Label>Instructions</Label>
-
-//             <Textarea
-//               rows={3}
-
-//               {...register("instructions")}
-//             />
+//             <Textarea rows={3} {...register("instructions")} />
+//             <FieldError message={errors.instructions?.message} />
 //           </div>
 
 //           <div>
 //             <Label>Deadline</Label>
-
 //             <Controller
 //               control={control}
-
 //               name="deadline"
-
 //               render={({ field }) => (
 //                 <DatePicker
 //                   selected={deadline}
-
 //                   onChange={(date: Date | null) => {
 //                     setDeadline(date);
-
 //                     field.onChange(date ? date.toISOString() : "");
 //                   }}
-
 //                   showTimeSelect
-
 //                   timeIntervals={15}
-
 //                   dateFormat="MMMM d, yyyy h:mm aa"
-
 //                   minDate={new Date()}
-
 //                   isClearable
-
 //                   placeholderText="Select quiz deadline"
-
 //                   className="w-full rounded-xl border px-4 py-3 bg-background text-sm"
 //                 />
 //               )}
@@ -879,23 +669,18 @@ export default function QuizForm({
 //         <CardContent className="space-y-5">
 //           <div>
 //             <Label>Allowed Answer File Types</Label>
-
 //             <Controller
 //               control={control}
-
 //               name="allowedFileTypes"
-
 //               render={({ field }) => (
-//                 <div className="flex flex-wrap gap-4 mt-3">
+//                 <div className="mt-3 flex flex-wrap gap-4">
 //                   {fileTypes.map((type) => (
 //                     <label
 //                       key={type.value}
-
 //                       className="flex items-center gap-2 text-sm"
 //                     >
 //                       <Checkbox
 //                         checked={field.value.includes(type.value)}
-
 //                         onCheckedChange={(checked) => {
 //                           field.onChange(
 //                             checked
@@ -906,7 +691,6 @@ export default function QuizForm({
 //                           );
 //                         }}
 //                       />
-
 //                       {type.label}
 //                     </label>
 //                   ))}
@@ -915,69 +699,62 @@ export default function QuizForm({
 //             />
 //           </div>
 
-//           <div className="grid sm:grid-cols-2 gap-4">
+//           <div className="grid gap-4 sm:grid-cols-2">
 //             <div>
 //               <Label>Maximum File Size (MB)</Label>
-
-//               <Input
-//                 type="number"
-
-//                 {...register("maxFileSizeMb")}
-//               />
+//               <Input type="number" {...register("maxFileSizeMb")} />
 //             </div>
-
 //             <div>
 //               <Label>Total Marks</Label>
-
-//               <Input
-//                 type="number"
-
-//                 {...register("totalMarks")}
-//               />
+//               <Input type="number" {...register("totalMarks")} />
 //             </div>
 //           </div>
 
 //           <div>
-//             <FileUpload
-//               title="Quiz Attachment"
-
-//               onFileSelect={setQuizFile}
-//             />
+//             <FileUpload title="Quiz Attachment" onFileSelect={setQuizFile} />
 //           </div>
 //         </CardContent>
 //       </Card>
 
+//       {/* Professional submit buttons */}
 //       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
 //         <Button
 //           type="button"
-
 //           variant="outline"
-
 //           disabled={saving}
-
-//           className="w-full sm:w-auto"
-
-//           onClick={handleSubmit((values) => submit(values, false))}
+//           className="w-full min-w-[140px] sm:w-auto"
+//           onClick={handleSubmit((values) => submit(values, false), onInvalid)}
 //         >
-//           <Save className="h-4 w-4" />
-//           Save Draft
+//           {saving ? (
+//             <>
+//               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+//               Saving…
+//             </>
+//           ) : (
+//             <>
+//               <Save className="h-4 w-4" />
+//               Save Draft
+//             </>
+//           )}
 //         </Button>
 
 //         <Button
 //           type="button"
-
 //           disabled={saving}
-
-//           className="w-full sm:w-auto"
-
-//           onClick={handleSubmit((values) => submit(values, true))}
+//           className="w-full min-w-[160px] sm:w-auto"
+//           onClick={handleSubmit((values) => submit(values, true), onInvalid)}
 //         >
-//           <Send className="h-4 w-4" />
-//           {saving
-//             ? "Saving…"
-//             : mode === "create"
-//               ? "Publish Quiz"
-//               : "Save & Publish"}
+//           {saving ? (
+//             <>
+//               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+//               Publishing…
+//             </>
+//           ) : (
+//             <>
+//               <Send className="h-4 w-4" />
+//               {mode === "create" ? "Publish Quiz" : "Save & Publish"}
+//             </>
+//           )}
 //         </Button>
 //       </div>
 //     </form>

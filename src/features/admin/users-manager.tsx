@@ -196,18 +196,49 @@ export function UsersManager({ scope = "all" }: { scope?: UsersScope }) {
     async function confirmDelete() {
         if (!pendingDelete) return;
         const target = pendingDelete;
+
         try {
             await deleteUser(target.id);
+
             setUsers((prev) => prev.filter((u) => u.id !== target.id));
             setDetail((d) => (d && d.id === target.id ? null : d));
-            toast.success(`${target.name} delete ho gaya`);
+
+            toast.custom((t) => (
+                <div
+                    className={`${t.visible
+                            ? "animate-in fade-in slide-in-from-top-2"
+                            : "animate-out fade-out"
+                        } flex w-full max-w-sm items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 shadow-lg dark:border-red-800 dark:bg-red-950/60`}
+                >
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500 text-white">
+                        <Trash2 className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-semibold text-red-900 dark:text-red-100">
+                            {target.name} deleted successfully
+                        </p>
+                        <p className="mt-0.5 text-xs text-red-700 dark:text-red-300">
+                            Account has been permanently removed.
+                        </p>
+                    </div>
+                </div>
+            ));
         } catch (err: unknown) {
-            toast.error(errorMessage(err, "Could not delete."));
+            const msg = errorMessage(err, "Could not delete the account.");
+
+            // Common backend messages ko friendly banao
+            const friendly =
+                msg.toLowerCase().includes("not found")
+                    ? "This account was not found. It may have already been deleted."
+                    : msg.toLowerCase().includes("forbidden") || msg.toLowerCase().includes("permission")
+                        ? "You don't have permission to delete this account."
+                        : msg;
+
+            toast.error(friendly);
         } finally {
             setPendingDelete(null);
         }
     }
-
     function handleExport() {
         exportToCsv(
             `smartlms-${scope === "all" ? "users" : `${scope}s`}-${new Date()

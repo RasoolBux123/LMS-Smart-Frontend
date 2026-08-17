@@ -376,23 +376,34 @@ export function ProgramForm({ mode, program }: ProgramFormProps) {
         </CardContent>
       </Card>
 
-      <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
+      {/* Professional submit buttons */}
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button
           type="button"
           variant="outline"
           onClick={() => router.back()}
           disabled={submitting}
-          className="w-full sm:w-auto"
+          className="w-full min-w-[120px] sm:w-auto"
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
+
+        <Button
+          type="submit"
+          disabled={submitting}
+          className="w-full min-w-[160px] sm:w-auto"
+        >
           {submitting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {mode === "create" ? "Creating…" : "Saving…"}
+            </>
           ) : (
-            <Save className="h-4 w-4" />
+            <>
+              <Save className="h-4 w-4" />
+              {mode === "create" ? "Create program" : "Save changes"}
+            </>
           )}
-          {mode === "create" ? "Create program" : "Save changes"}
         </Button>
       </div>
     </form>
@@ -431,9 +442,15 @@ function Field({
 }
 
 
+
+
+
+
+
+
 // "use client";
 
-// import { useState } from "react";
+// import { useEffect, useState } from "react";
 // import { useRouter } from "next/navigation";
 // import { toast } from "sonner";
 // import { Save, Loader2, AlertCircle } from "lucide-react";
@@ -443,6 +460,7 @@ function Field({
 // import { Label } from "@/components/ui/label";
 // import { Button } from "@/components/ui/button";
 // import { createProgram, updateProgram } from "@/lib/api/programs";
+// import { listCourses, type Course } from "@/lib/api/courses";
 // import { errorMessage, cn } from "@/lib/utils";
 // import {
 //   PROGRAM_LEVELS,
@@ -473,6 +491,7 @@ function Field({
 //   coordinator: string;
 //   company: string;
 //   color: string;
+//   courseIds: string[];
 // }
 
 // function initialState(program?: Program): FormState {
@@ -487,6 +506,7 @@ function Field({
 //     coordinator: program?.coordinator ?? "",
 //     company: program?.company ?? "",
 //     color: program?.color ?? SWATCHES[0],
+//     courseIds: program?.courseIds ?? [],
 //   };
 // }
 
@@ -534,6 +554,15 @@ function Field({
 //   const [values, setValues] = useState<FormState>(() => initialState(program));
 //   const [errors, setErrors] = useState<Errors>({});
 //   const [submitting, setSubmitting] = useState(false);
+//   const [courses, setCourses] = useState<Course[]>([]);
+//   const [loadingCourses, setLoadingCourses] = useState(true);
+
+//   useEffect(() => {
+//     listCourses()
+//       .then((res) => setCourses(res.data ?? []))
+//       .catch(() => setCourses([]))
+//       .finally(() => setLoadingCourses(false));
+//   }, []);
 
 //   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
 //     setValues((prev) => ({ ...prev, [key]: value }));
@@ -542,6 +571,15 @@ function Field({
 //       delete next[key];
 //       return next;
 //     });
+//   }
+
+//   function toggleCourse(courseId: string) {
+//     setValues((prev) => ({
+//       ...prev,
+//       courseIds: prev.courseIds.includes(courseId)
+//         ? prev.courseIds.filter((id) => id !== courseId)
+//         : [...prev.courseIds, courseId],
+//     }));
 //   }
 
 //   async function handleSubmit(e: React.FormEvent) {
@@ -561,8 +599,7 @@ function Field({
 //       coordinator: values.coordinator.trim() || undefined,
 //       company: values.company.trim() || undefined,
 //       color: values.color,
-//       // keep existing courseIds on edit so we don't wipe them
-//       courseIds: mode === "edit" && program ? program.courseIds : [],
+//       courseIds: values.courseIds,
 //     };
 
 //     setSubmitting(true);
@@ -737,6 +774,58 @@ function Field({
 //         </CardContent>
 //       </Card>
 
+//       {/* Courses selector */}
+//       <Card>
+//         <CardHeader>
+//           <CardTitle>Courses in this program</CardTitle>
+//         </CardHeader>
+//         <CardContent>
+//           {loadingCourses ? (
+//             <p className="text-sm text-muted-foreground">Loading courses…</p>
+//           ) : courses.length === 0 ? (
+//             <p className="text-sm text-muted-foreground">
+//               No courses available. Create courses first from the Courses page.
+//             </p>
+//           ) : (
+//             <div className="space-y-2">
+//               <p className="mb-3 text-xs text-muted-foreground">
+//                 Select the courses that belong to this program. Selected:{" "}
+//                 <span className="font-medium text-foreground">
+//                   {values.courseIds.length}
+//                 </span>
+//               </p>
+//               <div className="max-h-64 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
+//                 {courses.map((course) => {
+//                   const checked = values.courseIds.includes(course.id);
+//                   return (
+//                     <label
+//                       key={course.id}
+//                       className={cn(
+//                         "flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+//                         checked ? "bg-primary/10" : "hover:bg-muted/50",
+//                       )}
+//                     >
+//                       <input
+//                         type="checkbox"
+//                         checked={checked}
+//                         onChange={() => toggleCourse(course.id)}
+//                         className="h-4 w-4 rounded border-input"
+//                       />
+//                       <span className="min-w-0 flex-1 truncate font-medium">
+//                         {course.title}
+//                       </span>
+//                       <span className="text-xs capitalize text-muted-foreground">
+//                         {course.status}
+//                       </span>
+//                     </label>
+//                   );
+//                 })}
+//               </div>
+//             </div>
+//           )}
+//         </CardContent>
+//       </Card>
+
 //       <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
 //         <Button
 //           type="button"
@@ -790,3 +879,4 @@ function Field({
 //     </div>
 //   );
 // }
+
