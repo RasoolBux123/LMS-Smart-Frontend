@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import { StudentInsightCard } from "@/components/ai/StudentInsightCard";
 
 export default function StudentGradingPage() {
   const { user } = useCurrentUser();
@@ -100,6 +101,8 @@ export default function StudentGradingPage() {
             <GradingAccordion title="Quiz" rows={report.quizzes} />
             <GradingAccordion title="Project" rows={report.projects} />
             <GradingAccordion title="Exam" rows={report.exams} />
+            
+
           </div>
 
           <Card>
@@ -153,10 +156,10 @@ export default function StudentGradingPage() {
               </table>
             </CardContent>
           </Card>
+
+          <StudentInsightCard courseId={courseId} studentId={user?.email ?? ""} />
         </>
       )}
     </div>
   );
 }
-
-
