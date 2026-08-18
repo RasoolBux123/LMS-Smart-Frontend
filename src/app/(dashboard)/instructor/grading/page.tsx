@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { listCourses, type Course } from "@/lib/api/courses";
 import { listCourseEnrollments, type Enrollment } from "@/lib/api/enrollments";
 import { getStudentGrading, type StudentGradingReport } from "@/lib/api/grading";
 import { GradingAccordion } from "@/components/shared/grading-accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
+
 import {
   Select,
   SelectTrigger,
@@ -31,6 +32,7 @@ export default function InstructorGradingPage() {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingReport, setLoadingReport] = useState(false);
   const [insightKey, setInsightKey] = useState(0); // bump to force InstructorInsightCard to refetch
+  const lastGenerated = useRef<string>("");
 
   // Instructor courses only (backend filters by role)
   useEffect(() => {
@@ -84,18 +86,21 @@ export default function InstructorGradingPage() {
       .finally(() => setLoadingReport(false));
   }, [courseId, studentEmail]);
 
-  // Generate/refresh AI insight whenever a report loads for a student
+  // Generate/refresh AI insight when the marks actually change
   useEffect(() => {
-  if (!report || !courseId || !studentEmail) return;
+    if (!report || !courseId || !studentEmail) return;
 
-  const gradeData = buildGradeDataFromReport(report, studentEmail, courseId);
+    const gradeData = buildGradeDataFromReport(report, studentEmail, courseId);
+    const signature = `${studentEmail}|${courseId}|${JSON.stringify(gradeData.components)}`;
+    if (lastGenerated.current === signature) return;
+    lastGenerated.current = signature;
 
-  triggerInsightGeneration(gradeData)
-    .then(() => setInsightKey((k) => k + 1))
-    .catch((err) => {
-      console.error("AI insight generation failed:", err);
-    });
-}, [report, courseId, studentEmail]);
+    triggerInsightGeneration(gradeData)
+      .then(() => setInsightKey((k) => k + 1))
+      .catch((err) => {
+        console.error("AI insight generation failed:", err);
+      });
+  }, [report, courseId, studentEmail]);
 
   const filteredStudents = useMemo(() => {
     const q = studentSearch.trim().toLowerCase();
@@ -135,10 +140,7 @@ export default function InstructorGradingPage() {
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           {/* Course dropdown */}
-          <Select
-            value={courseId || undefined}
-            onValueChange={(v) => setCourseId(v)}
-          >
+          <Select value={courseId} onValueChange={(v) => setCourseId(v)}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Select course" />
             </SelectTrigger>
@@ -171,7 +173,7 @@ export default function InstructorGradingPage() {
 
           {/* Student dropdown */}
           <Select
-            value={studentEmail || undefined}
+            value={studentEmail}
             onValueChange={(v) => setStudentEmail(v)}
             disabled={!courseId || loadingStudents}
           >

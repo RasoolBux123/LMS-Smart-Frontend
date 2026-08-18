@@ -1,6 +1,12 @@
-// lib/aiInsights.ts
+// lib/api/aiInsights.ts
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import type {
+  StudentGradingReport,
+  GradeRow,
+  GradeStatus,
+} from "@/lib/api/grading";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ---- Types matching backend schemas ----
 export type ComponentType = "Assignment" | "Quiz" | "Project" | "Exam";
@@ -46,6 +52,7 @@ export interface AIInsight {
   student_message: string;
   focus_topic: string | null;
   attendance_pct: number | null;
+  suggested_topics: string[];
   generated_at: string;
 }
 
@@ -59,38 +66,37 @@ export interface AdminInsightStats {
 export interface StudentInsightView {
   student_message: string;
   focus_topic: string | null;
-  suggested_topics: string[];   // ✅ new
+  suggested_topics: string[];
   attendance_pct: number | null;
 }
 
-// add to src/lib/api/aiInsights.ts
+// ---- Report -> backend payload ----
 
-import type { StudentGradingReport } from "@/lib/api/grading";
+const STATUS_MAP: Record<GradeStatus, SubmissionStatus> = {
+  submitted: "Submitted",
+  not_graded_yet: "Submitted",
+  pending: "Pending",
+  not_submitted: "Not Submitted",
+};
 
-
-// add to src/lib/api/aiInsights.ts
-
-export async function getCourseInsightsList(courseId: string): Promise<AIInsight[]> {
-  const res = await fetch(`${BASE_URL}/api/ai-insights/course/${encodeURIComponent(courseId)}/list`);
-  if (!res.ok) return [];
-  return res.json();
-}
 export function buildGradeDataFromReport(
   report: StudentGradingReport,
   studentEmail: string,
   courseId: string
 ): StudentGradeData {
-  const toItems = (rows: any[]): GradedItem[] =>
+  const toItems = (rows: GradeRow[]): GradedItem[] =>
     (rows ?? []).map((r) => ({
-      name: r.name ?? r.title ?? "Untitled",
-      total: r.totalMarks ?? r.total ?? 0,
-      obtained: r.obtainedMarks ?? r.obtained ?? 0,
-      status: r.status ?? "Not Submitted",
-      remarks: r.remarks ?? undefined,
+      name: r.name || "Untitled",
+      total: Number(r.totalMarks ?? 0),
+      obtained: Number(r.obtainedMarks ?? 0),
+      status: STATUS_MAP[r.status] ?? "Not Submitted",
+      remarks: r.remarks || undefined,
     }));
 
   const weightageFor = (type: ComponentType) =>
-    report.performance.find((p) => p.component === type)?.weightagePercent ?? 0;
+    report.performance.find(
+      (p) => p.component?.toLowerCase() === type.toLowerCase()
+    )?.weightagePercent ?? 0;
 
   return {
     student_id: studentEmail,
@@ -98,10 +104,10 @@ export function buildGradeDataFromReport(
     course_id: courseId,
     course_name: report.courseTitle,
     components: [
-      { type: "Assignment", weightage: weightageFor("Assignment" as ComponentType), items: toItems(report.assignments) },
-      { type: "Quiz", weightage: weightageFor("Quiz" as ComponentType), items: toItems(report.quizzes) },
-      { type: "Project", weightage: weightageFor("Project" as ComponentType), items: toItems(report.projects) },
-      { type: "Exam", weightage: weightageFor("Exam" as ComponentType), items: toItems(report.exams) },
+      { type: "Assignment", weightage: weightageFor("Assignment"), items: toItems(report.assignments) },
+      { type: "Quiz", weightage: weightageFor("Quiz"), items: toItems(report.quizzes) },
+      { type: "Project", weightage: weightageFor("Project"), items: toItems(report.projects) },
+      { type: "Exam", weightage: weightageFor("Exam"), items: toItems(report.exams) },
     ],
   };
 }
@@ -114,7 +120,11 @@ export async function triggerInsightGeneration(data: StudentGradeData) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to generate insight");
+  if (!res.ok) {
+    const detail = await res.text();
+    console.error("generate insight failed", res.status, detail);
+    throw new Error(`Failed to generate insight (${res.status})`);
+  }
   return res.json();
 }
 
@@ -123,21 +133,34 @@ export async function getInstructorInsight(
   courseId: string
 ): Promise<AIInsight | null> {
   const res = await fetch(
-    `${BASE_URL}/api/ai-insights/instructor/${studentId}?course_id=${courseId}`
+    `${BASE_URL}/api/ai-insights/instructor/${encodeURIComponent(studentId)}?course_id=${encodeURIComponent(courseId)}`
   );
   if (!res.ok) return null;
   return res.json();
 }
 
 export async function getAdminInsights(courseId: string): Promise<AdminInsightStats | null> {
-  const res = await fetch(`${BASE_URL}/api/ai-insights/admin?course_id=${courseId}`);
+  const res = await fetch(
+    `${BASE_URL}/api/ai-insights/admin?course_id=${encodeURIComponent(courseId)}`
+  );
   if (!res.ok) return null;
   return res.json();
 }
 
-export async function getStudentInsight(courseId: string, studentId: string) {
+export async function getCourseInsightsList(courseId: string): Promise<AIInsight[]> {
   const res = await fetch(
-    `${BASE_URL}/api/ai-insights/student?course_id=${courseId}&student_id=${studentId}`,
+    `${BASE_URL}/api/ai-insights/course/${encodeURIComponent(courseId)}/list`
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function getStudentInsight(
+  courseId: string,
+  studentId: string
+): Promise<StudentInsightView | null> {
+  const res = await fetch(
+    `${BASE_URL}/api/ai-insights/student?course_id=${encodeURIComponent(courseId)}&student_id=${encodeURIComponent(studentId)}`,
     { credentials: "include" }
   );
   if (!res.ok) return null;
