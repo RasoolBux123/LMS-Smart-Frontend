@@ -27,3 +27,13 @@ export async function markNotificationRead(id: string): Promise<void> {
 export async function markAllNotificationsRead(): Promise<void> {
     await apiFetch(`/notifications/read-all`, { method: "PATCH" });
 }
+
+// ✅ new — triggers AI risk-alert notifications for a course
+export async function generateRiskAlerts(
+    courseId: string,
+): Promise<{ success: boolean; created: number }> {
+    return apiFetch(
+        `/notifications/generate-risk-alerts?course_id=${encodeURIComponent(courseId)}`,
+        { method: "POST" },
+    );
+}

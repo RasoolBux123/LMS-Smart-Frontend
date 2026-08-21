@@ -225,7 +225,7 @@ export default function StudentAIInsightsPage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4 text-primary" />
-                    <p className="text-sm font-semibold">What to study next</p>
+                    <p className="text-sm font-semibold">You should focus on</p>
                     <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                       {topics.length} topics
                     </span>

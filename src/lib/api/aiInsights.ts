@@ -19,6 +19,10 @@ export interface GradedItem {
   obtained: number;
   status: SubmissionStatus;
   remarks?: string;
+  // ✅ NEW: real content of the item (title/description/instructions), used
+  // by the backend to generate grounded "what to study next" topics instead
+  // of guessing from the course name.
+  description?: string;
 }
 
 export interface ComponentSummary {
@@ -91,6 +95,15 @@ export function buildGradeDataFromReport(
       obtained: Number(r.obtainedMarks ?? 0),
       status: STATUS_MAP[r.status] ?? "Not Submitted",
       remarks: r.remarks || undefined,
+      // ✅ NEW: pass through the item's actual content so the AI can ground
+      // suggested study topics in real assignment/quiz/exam/project content
+      // instead of inferring from the course name.
+      // NOTE: if `description` isn't on GradeRow yet, it needs to be added
+      // wherever GradeRow / StudentGradingReport is built on the backend
+      // (the grading report endpoint), pulling from the Assignment/Quiz/
+      // Exam/Project document's `title` + `description` (and for quizzes,
+      // optionally a short summary of question topics).
+      description: (r as any).description || undefined,
     }));
 
   const weightageFor = (type: ComponentType) =>
@@ -165,4 +178,32 @@ export async function getStudentInsight(
   );
   if (!res.ok) return null;
   return res.json();
+}
+
+
+// ---- Dashboard aggregation ----
+
+export async function getAggregatedRiskSummary(
+  courseIds: string[]
+): Promise<{ highRisk: number; needsAttention: number; safe: number }> {
+  if (courseIds.length === 0) {
+    return { highRisk: 0, needsAttention: 0, safe: 0 };
+  }
+
+  const results = await Promise.all(
+    courseIds.map((id) => getAdminInsights(id).catch(() => null))
+  );
+
+  let highRisk = 0;
+  let needsAttention = 0;
+  let safe = 0;
+
+  results.forEach((stats) => {
+    if (!stats) return;
+    highRisk += stats.risk_counts.failure_risk ?? 0;
+    needsAttention += (stats.risk_counts.at_risk ?? 0) + (stats.risk_counts.incomplete_data ?? 0);
+    safe += (stats.risk_counts.top ?? 0) + (stats.risk_counts.on_track ?? 0);
+  });
+
+  return { highRisk, needsAttention, safe };
 }

@@ -33,12 +33,7 @@ import { getAssignments } from "@/lib/api/assignments";
 import { listCourses, type Course } from "@/lib/api/courses";
 import type { AssignmentListItem } from "@/types/assignment";
 import { formatDate } from "@/lib/utils";
-
-const aiRiskSummary = [
-  { label: "High Risk", value: 3, tone: "danger" as const },
-  { label: "Needs Attention", value: 8, tone: "warning" as const },
-  { label: "Safe Students", value: 40, tone: "success" as const },
-];
+import { getAggregatedRiskSummary } from "@/lib/api/aiInsights";
 
 const riskToneDot: Record<string, string> = {
   danger: "bg-danger",
@@ -53,6 +48,9 @@ export default function InstructorDashboardPage() {
   const [selectedCourseId, setSelectedCourseId] = useState<string>("all");
   const [studentCount, setStudentCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const [riskSummary, setRiskSummary] = useState({ highRisk: 0, needsAttention: 0, safe: 0 });
+  const [loadingRisk, setLoadingRisk] = useState(true);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -96,6 +94,20 @@ export default function InstructorDashboardPage() {
       cancelled = true;
     };
   }, [user?.id, user?.role]);
+
+  // Fetch live AI risk summary whenever courses list or selected course changes
+  useEffect(() => {
+    if (courses.length === 0) return;
+
+    setLoadingRisk(true);
+
+    const idsToFetch =
+      selectedCourseId === "all" ? courses.map((c) => c.id) : [selectedCourseId];
+
+    getAggregatedRiskSummary(idsToFetch)
+      .then((summary) => setRiskSummary(summary))
+      .finally(() => setLoadingRisk(false));
+  }, [courses, selectedCourseId]);
 
   const filteredAssignments = useMemo(() => {
     if (selectedCourseId === "all") return assignments;
@@ -231,7 +243,7 @@ export default function InstructorDashboardPage() {
         />
       </div>
 
-      {/* AI Risk banner */}
+      {/* AI Risk banner — live data */}
       <Card className="border-accent/30 bg-accent-soft/40">
         <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
@@ -254,17 +266,27 @@ export default function InstructorDashboardPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            {aiRiskSummary.map((item) => (
-              <div key={item.label} className="flex items-center gap-2">
-                <span
-                  className={`h-2 w-2 rounded-full ${riskToneDot[item.tone]}`}
-                />
-                <span className="text-sm text-muted-foreground">
-                  {item.label}
-                </span>
-                <span className="text-sm font-semibold">{item.value}</span>
-              </div>
-            ))}
+            {loadingRisk ? (
+              <span className="text-xs text-muted-foreground">Loading risk data…</span>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${riskToneDot.danger}`} />
+                  <span className="text-sm text-muted-foreground">High Risk</span>
+                  <span className="text-sm font-semibold">{riskSummary.highRisk}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${riskToneDot.warning}`} />
+                  <span className="text-sm text-muted-foreground">Needs Attention</span>
+                  <span className="text-sm font-semibold">{riskSummary.needsAttention}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${riskToneDot.success}`} />
+                  <span className="text-sm text-muted-foreground">Safe Students</span>
+                  <span className="text-sm font-semibold">{riskSummary.safe}</span>
+                </div>
+              </>
+            )}
           </div>
 
           <Button variant="ghost" size="sm" asChild>
@@ -346,286 +368,3 @@ export default function InstructorDashboardPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-// "use client";
-
-// import { useEffect, useMemo, useState } from "react";
-// import Link from "next/link";
-// import {
-//   FileText,
-//   Send,
-//   Hourglass,
-//   AlertTriangle,
-//   Users,
-//   ArrowRight,
-//   Sparkles,
-//   Loader2,
-// } from "lucide-react";
-// import { StatCard } from "@/components/shared/stat-card";
-// import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
-// import { AssignmentStatusBadge } from "@/components/shared/status-badge";
-// import {
-//   SubmissionsTrendChart,
-//   StatusBreakdownChart,
-// } from "@/features/instructor/charts";
-// import { useAuth } from "@/hooks/useAuth";
-// import { listMyStudents } from "@/lib/api/enrollments";
-// import { getAssignments } from "@/lib/api/assignments";
-// import type { AssignmentListItem } from "@/types/assignment";
-// import { formatDate } from "@/lib/utils";
-
-// const aiRiskSummary = [
-//   { label: "High Risk", value: 3, tone: "danger" as const },
-//   { label: "Needs Attention", value: 8, tone: "warning" as const },
-//   { label: "Safe Students", value: 40, tone: "success" as const },
-// ];
-
-// const riskToneDot: Record<string, string> = {
-//   danger: "bg-danger",
-//   warning: "bg-warning",
-//   success: "bg-success",
-// };
-
-// export default function InstructorDashboardPage() {
-//   const { user } = useAuth();
-//   const [assignments, setAssignments] = useState<AssignmentListItem[]>([]);
-//   const [studentCount, setStudentCount] = useState(0);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     if (!user?.id) return;
-//     let cancelled = false;
-
-//     async function load() {
-//       setLoading(true);
-//       try {
-//         const [aRes, sRes] = await Promise.all([
-//           getAssignments({}).catch(() => [] as AssignmentListItem[]),
-//           listMyStudents().catch(() => ({ data: [] })),
-//         ]);
-
-//         if (cancelled) return;
-
-//         const list = Array.isArray(aRes)
-//           ? aRes
-//           : Array.isArray((aRes as { data?: unknown })?.data)
-//             ? ((aRes as { data: AssignmentListItem[] }).data)
-//             : [];
-
-//         const mine = list.filter(
-//           (a) =>
-//             !a.instructorId ||
-//             a.instructorId === user!.id ||
-//             user!.role === "admin",
-//         );
-//         setAssignments(mine);
-//         setStudentCount(Array.isArray(sRes.data) ? sRes.data.length : 0);
-//       } finally {
-//         if (!cancelled) setLoading(false);
-//       }
-//     }
-
-//     load();
-//     return () => {
-//       cancelled = true;
-//     };
-//   }, [user?.id, user?.role]);
-
-//   const stats = useMemo(() => {
-//     const totalAssignments = assignments.length;
-//     const published = assignments.filter((a) => a.status === "published").length;
-//     const pendingReview = assignments.reduce(
-//       (acc, a) =>
-//         acc + Math.max(0, (a.submittedCount ?? 0) - (a.gradedCount ?? 0)),
-//       0,
-//     );
-//     return {
-//       totalAssignments,
-//       published,
-//       pendingReview,
-//       lateSubmissions: 0,
-//       totalStudents: studentCount,
-//     };
-//   }, [assignments, studentCount]);
-
-//   const recent = assignments
-//     .slice()
-//     .sort(
-//       (a, b) =>
-//         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-//     )
-//     .slice(0, 5);
-
-//   const displayName =
-//     user?.name?.split(" ").at(-1) || user?.name || "Instructor";
-
-//   if (loading) {
-//     return (
-//       <div className="flex min-h-[40vh] items-center justify-center gap-2 text-muted-foreground">
-//         <Loader2 className="h-5 w-5 animate-spin" />
-//         Loading dashboard…
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="space-y-6">
-//       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-//         <div>
-//           <h1 className="font-display text-2xl font-semibold">
-//             Welcome back, {displayName}
-//           </h1>
-//           <p className="text-sm text-muted-foreground">
-//             Overview of your courses, students and coursework.
-//           </p>
-//         </div>
-//       </div>
-
-//       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-//         <StatCard
-//           label="Total assignments"
-//           value={stats.totalAssignments}
-//           icon={FileText}
-//           tone="primary"
-//           index={0}
-//         />
-//         <StatCard
-//           label="Published"
-//           value={stats.published}
-//           icon={Send}
-//           tone="accent"
-//           index={1}
-//         />
-//         <StatCard
-//           label="Pending review"
-//           value={stats.pendingReview}
-//           icon={Hourglass}
-//           tone="warning"
-//           index={2}
-//         />
-//         <StatCard
-//           label="Late submissions"
-//           value={stats.lateSubmissions}
-//           icon={AlertTriangle}
-//           tone="danger"
-//           index={3}
-//         />
-//         <StatCard
-//           label="Total students"
-//           value={stats.totalStudents}
-//           icon={Users}
-//           tone="info"
-//           index={4}
-//         />
-//       </div>
-
-//       <Card className="border-accent/30 bg-accent-soft/40">
-//         <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
-//           <div className="flex items-start gap-3">
-//             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft">
-//               <Sparkles className="h-5 w-5 text-accent" />
-//             </div>
-//             <div>
-//               <div className="flex items-center gap-2">
-//                 <p className="font-display text-sm font-semibold">
-//                   AI Student Risk Analysis
-//                 </p>
-//                 <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-foreground">
-//                   AI
-//                 </span>
-//               </div>
-//               <p className="text-xs text-muted-foreground">
-//                 Student risk scored from submission patterns and grades level.
-//               </p>
-//             </div>
-//           </div>
-
-//           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-//             {aiRiskSummary.map((item) => (
-//               <div key={item.label} className="flex items-center gap-2">
-//                 <span
-//                   className={`h-2 w-2 rounded-full ${riskToneDot[item.tone]}`}
-//                 />
-//                 <span className="text-sm text-muted-foreground">
-//                   {item.label}
-//                 </span>
-//                 <span className="text-sm font-semibold">{item.value}</span>
-//               </div>
-//             ))}
-//           </div>
-
-//           <Button variant="ghost" size="sm" asChild>
-//             <Link href="/instructor/ai-insights">
-//               View analysis <ArrowRight className="h-3.5 w-3.5" />
-//             </Link>
-//           </Button>
-//         </CardContent>
-//       </Card>
-
-//       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-//         <Card className="lg:col-span-2">
-//           <CardHeader>
-//             <CardTitle>Submission activity</CardTitle>
-//           </CardHeader>
-//           <CardContent>
-//             <SubmissionsTrendChart data={[]} />
-//           </CardContent>
-//         </Card>
-//         <Card>
-//           <CardHeader>
-//             <CardTitle>Status breakdown</CardTitle>
-//           </CardHeader>
-//           <CardContent>
-//             <StatusBreakdownChart data={[]} />
-//           </CardContent>
-//         </Card>
-//       </div>
-
-//       <Card>
-//         <CardHeader className="flex-row items-center justify-between space-y-0">
-//           <CardTitle>Recent assignments</CardTitle>
-//           <Button variant="ghost" size="sm" asChild>
-//             <Link href="/instructor/assignments">
-//               View all <ArrowRight className="h-3.5 w-3.5" />
-//             </Link>
-//           </Button>
-//         </CardHeader>
-//         <CardContent>
-//           {recent.length === 0 ? (
-//             <p className="py-8 text-center text-sm text-muted-foreground">
-//               No assignments yet. Create one to get started.
-//             </p>
-//           ) : (
-//             <ul className="space-y-3">
-//               {recent.map((a) => (
-//                 <li
-//                   key={a.id}
-//                   className="flex items-center justify-between gap-3 rounded-xl border border-border p-3"
-//                 >
-//                   <div className="min-w-0">
-//                     <p className="truncate text-sm font-medium">{a.title}</p>
-//                     <p className="mt-0.5 text-xs text-muted-foreground">
-//                       {a.course?.title ?? "—"} · Due {formatDate(a.deadline)}
-//                     </p>
-//                   </div>
-//                   <AssignmentStatusBadge status={a.status} />
-//                 </li>
-//               ))}
-//             </ul>
-//           )}
-//         </CardContent>
-//       </Card>
-//     </div>
-//   );
-// }
-

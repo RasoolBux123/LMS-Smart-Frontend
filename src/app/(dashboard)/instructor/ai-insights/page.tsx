@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { listCourses, type Course } from "@/lib/api/courses";
+import { generateRiskAlerts } from "@/lib/api/notifications";
 import {
   getAdminInsights,
   getCourseInsightsList,
@@ -24,8 +25,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
-import { Sparkles, Loader2, ChevronDown } from "lucide-react";
+import { Sparkles, Loader2, ChevronDown, Bell } from "lucide-react";
 import { toast } from "sonner";
 
 const RISK_ORDER: RiskCategory[] = [
@@ -83,6 +85,7 @@ export default function InstructorAIInsightsPage() {
   const [openRow, setOpenRow] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingRows, setLoadingRows] = useState(false);
+  const [sendingAlerts, setSendingAlerts] = useState(false);
 
   useEffect(() => {
     listCourses()
@@ -122,6 +125,25 @@ export default function InstructorAIInsightsPage() {
     [rows, filter]
   );
 
+  async function handleSendRiskAlerts() {
+    if (!courseId) return;
+    setSendingAlerts(true);
+    try {
+      const res = await generateRiskAlerts(courseId);
+      if (res.created > 0) {
+        toast.success(
+          `${res.created} new risk alert${res.created === 1 ? "" : "s"} sent to your notifications.`
+        );
+      } else {
+        toast.info("No new risk alerts — you're already up to date.");
+      }
+    } catch {
+      toast.error("Could not generate risk alerts.");
+    } finally {
+      setSendingAlerts(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center gap-2 text-muted-foreground">
@@ -148,18 +170,30 @@ export default function InstructorAIInsightsPage() {
           </div>
         </div>
 
-        <Select value={courseId || undefined} onValueChange={setCourseId}>
-          <SelectTrigger className="w-full lg:w-52">
-            <SelectValue placeholder="Select course" />
-          </SelectTrigger>
-          <SelectContent>
-            {courses.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={courseId || undefined} onValueChange={setCourseId}>
+            <SelectTrigger className="w-full lg:w-52">
+              <SelectValue placeholder="Select course" />
+            </SelectTrigger>
+            <SelectContent>
+              {courses.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSendRiskAlerts}
+            disabled={sendingAlerts || !courseId}
+          >
+            <Bell className={`h-4 w-4 mr-1.5 ${sendingAlerts ? "animate-pulse" : ""}`} />
+            {sendingAlerts ? "Sending…" : "Notify me of risks"}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

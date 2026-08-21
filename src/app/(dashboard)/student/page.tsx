@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { StatCard } from "@/components/shared/stat-card";
 import { DeadlineRing } from "@/components/shared/deadline-ring";
@@ -25,6 +26,8 @@ import {
   useStudentCoursework,
 } from "@/hooks/useStudentCoursework";
 import type { CourseworkKind, DerivedCourseworkRow } from "@/types";
+import { listCourses, type Course } from "@/lib/api/courses";
+import { getStudentInsight, type StudentInsightView } from "@/lib/api/aiInsights";
 
 const KINDS: CourseworkKind[] = ["assignment", "quiz", "exam", "project"];
 
@@ -63,6 +66,46 @@ export default function StudentDashboardPage() {
     .filter((r) => r.studentStatus === "pending")
     .slice(0, 5);
   const recent = rows.slice(0, 6);
+
+  // ---- AI Insight banner data ----
+  const [insight, setInsight] = useState<StudentInsightView | null>(null);
+  const [insightLoading, setInsightLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    let cancelled = false;
+
+    async function loadInsight() {
+      setInsightLoading(true);
+      try {
+        const coursesRes = await listCourses();
+        const courses: Course[] = coursesRes.data ?? [];
+        if (courses.length === 0) {
+          if (!cancelled) setInsight(null);
+          return;
+        }
+
+        // check each enrolled course, use the first one with real insight data
+        for (const c of courses) {
+          const res = await getStudentInsight(c.id, user!.email);
+          if (res) {
+            if (!cancelled) setInsight(res);
+            return;
+          }
+        }
+        if (!cancelled) setInsight(null);
+      } catch {
+        if (!cancelled) setInsight(null);
+      } finally {
+        if (!cancelled) setInsightLoading(false);
+      }
+    }
+
+    loadInsight();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.email]);
 
   if (loading) {
     return (
@@ -114,6 +157,43 @@ export default function StudentDashboardPage() {
           index={3}
         />
       </div>
+
+      {/* AI Insight banner */}
+      {!insightLoading && insight && (
+        <Card className="border-primary/20 bg-primary-soft/40">
+          <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-display text-sm font-semibold">
+                    Your AI Insight
+                  </p>
+                  <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
+                    AI
+                  </span>
+                </div>
+                <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
+                  {insight.student_message}
+                </p>
+                {insight.focus_topic && (
+                  <p className="mt-1 text-xs text-primary">
+                    📌 Focus on: {insight.focus_topic}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <Button variant="ghost" size="sm" asChild className="shrink-0">
+              <Link href="/student/insights">
+                View insights <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
